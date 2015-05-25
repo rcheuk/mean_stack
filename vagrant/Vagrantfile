@@ -1,0 +1,52 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# variables
+VAGRANTFILE_API_VERSION = "2"
+ip_address = "172.23.23.23"
+project_name = "meanstack"
+
+# configuration start
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  # vm configuration
+  config.vm.box = "ubuntu/trusty64"
+
+	# Networking
+  # set up hostmanager to reach server at meanstack.local:port
+  config.hostmanager.enabled = true
+  config.hostmanager.manage_host = true
+  config.hostmanager.ignore_private_ip = false
+  config.hostmanager.include_offline = true
+  config.vm.define project_name do |node|
+    node.vm.hostname = project_name + ".local"
+    node.vm.network :private_network, ip: ip_address
+    node.hostmanager.aliases = ["www." + project_name + ".local"]
+  end
+
+  config.vm.provision :hostmanager
+
+	config.vm.network "forwarded_port", host: 3001, guest: 3000
+
+  # Share an additional folder to the guest VM. The first argument is
+  # the path on the host to the actual folder. The second argument is
+  # the path on the guest to mount the folder. And the optional third
+  # argument is a set of non-required options.
+   config.vm.synced_folder "../mean_projects/", "/srv/mean_projects"
+
+  # config.vm.provider "virtualbox" do |vb|
+  #   # Display the VirtualBox GUI when booting the machine
+  #   vb.gui = true
+  #
+  #   # Customize the amount of memory on the VM:
+  #   vb.memory = "1024"
+  # end
+  #
+
+	config.vm.provision :shell, path: "provisioning/setup.sh"
+
+	# Configurate the virtual machine to use 2GB of RAM
+  config.vm.provider :virtualbox do |vb|
+    vb.customize ["modifyvm", :id, "--memory", "2048"]
+    vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+  end
+end
